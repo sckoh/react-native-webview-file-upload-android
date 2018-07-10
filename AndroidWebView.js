@@ -8,21 +8,19 @@
  *
  * @providesModule AndroidWebView
  */
-import React, {
-  Component,
-  PropTypes,
-} from 'react';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
 import ReactNative, {
   EdgeInsetsPropType,
   ActivityIndicator,
   StyleSheet,
   UIManager,
   View,
-  requireNativeComponent,
-} from 'react-native';
-import warning from 'warning';
-import keyMirror from 'keymirror';
-import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
+  requireNativeComponent
+} from "react-native";
+import warning from "warning";
+import keyMirror from "keymirror";
+import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 
 /**
  * Adds a function for warning Users of deprecated prop use (when something was
@@ -40,7 +38,8 @@ import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource'
  */
 const warned = {};
 export default function deprecatedPropType(propType, explanation) {
-  return function validate(props, propName, componentName, ...rest) { // Note ...rest here
+  return function validate(props, propName, componentName, ...rest) {
+    // Note ...rest here
     if (props[propName] != null) {
       const message = `"${propName}" property of "${componentName}" has been deprecated.\n${explanation}`;
       if (!warned[message]) {
@@ -53,39 +52,35 @@ export default function deprecatedPropType(propType, explanation) {
   };
 }
 
-
-const RCT_WEBVIEW_REF = 'AndroidWebView';
-
+const RCT_WEBVIEW_REF = "AndroidWebView";
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1
   },
   hidden: {
     height: 0,
-    flex: 0, // disable 'flex:1' when hiding a View
+    flex: 0 // disable 'flex:1' when hiding a View
   },
   loadingView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center"
   },
   loadingProgressBar: {
-    height: 20,
-  },
+    height: 20
+  }
 });
 
 const WebViewState = keyMirror({
   IDLE: null,
   LOADING: null,
-  ERROR: null,
+  ERROR: null
 });
 
 const defaultRenderLoading = () => (
   <View style={styles.loadingView}>
-    <ActivityIndicator
-      style={styles.loadingProgressBar}
-    />
+    <ActivityIndicator style={styles.loadingProgressBar} />
   </View>
 );
 
@@ -94,7 +89,6 @@ const defaultRenderLoading = () => (
  */
 class AndroidWebView extends Component {
   static propTypes = {
-    ...View.propTypes,
     renderError: PropTypes.func,
     renderLoading: PropTypes.func,
     onLoad: PropTypes.func,
@@ -107,17 +101,13 @@ class AndroidWebView extends Component {
     onMessage: PropTypes.func,
     onContentSizeChange: PropTypes.func,
     startInLoadingState: PropTypes.bool, // force WebView to show loadingView on first load
-    style: View.propTypes.style,
 
     html: deprecatedPropType(
       PropTypes.string,
-      'Use the `source` prop instead.',
+      "Use the `source` prop instead."
     ),
 
-    url: deprecatedPropType(
-      PropTypes.string,
-      'Use the `source` prop instead.',
-    ),
+    url: deprecatedPropType(PropTypes.string, "Use the `source` prop instead."),
 
     /**
      * Loads static html or a uri (with optional headers) in the WebView.
@@ -132,7 +122,7 @@ class AndroidWebView extends Component {
          * The HTTP Method to use. Defaults to GET if not specified.
          * NOTE: On Android, only GET and POST are supported.
          */
-        method: PropTypes.oneOf(['GET', 'POST']),
+        method: PropTypes.oneOf(["GET", "POST"]),
         /*
          * Additional HTTP headers to send with the request.
          * NOTE: On Android, this can only be used with GET requests.
@@ -144,7 +134,7 @@ class AndroidWebView extends Component {
          * additional encoding (e.g. URL-escaping or base64) applied.
          * NOTE: On Android, this can only be used with POST requests.
          */
-        body: PropTypes.string,
+        body: PropTypes.string
       }),
       PropTypes.shape({
         /*
@@ -154,12 +144,12 @@ class AndroidWebView extends Component {
         /*
          * The base URL to be used for any relative links in the HTML.
          */
-        baseUrl: PropTypes.string,
+        baseUrl: PropTypes.string
       }),
       /*
        * Used internally by packager.
        */
-      PropTypes.number,
+      PropTypes.number
     ]),
 
     /**
@@ -225,11 +215,7 @@ class AndroidWebView extends Component {
      * - `'compatibility'` -  WebView will attempt to be compatible with the approach of a modern web browser with regard to mixed content.
      * @platform android
      */
-    mixedContentMode: PropTypes.oneOf([
-      'never',
-      'always',
-      'compatibility'
-    ]),
+    mixedContentMode: PropTypes.oneOf(["never", "always", "compatibility"]),
 
     /**
      * Used on Android only, controls whether form autocomplete data should be saved
@@ -240,7 +226,7 @@ class AndroidWebView extends Component {
     /**
      * Make upload file available
      */
-    uploadEnabledAndroid: PropTypes.bool,
+    uploadEnabledAndroid: PropTypes.bool
   };
 
   static defaultProps = {
@@ -252,7 +238,7 @@ class AndroidWebView extends Component {
   state = {
     viewState: WebViewState.IDLE,
     lastErrorEvent: null,
-    startInLoadingState: true,
+    startInLoadingState: true
   };
 
   componentWillMount() {
@@ -261,31 +247,31 @@ class AndroidWebView extends Component {
     }
   }
 
-  onLoadingStart = (event) => {
+  onLoadingStart = event => {
     const onLoadStart = this.props.onLoadStart;
     onLoadStart && onLoadStart(event);
     this.updateNavigationState(event);
   };
 
-  onLoadingError = (event) => {
+  onLoadingError = event => {
     event.persist(); // persist this event because we need to store it
     const { onError, onLoadEnd } = this.props;
     onError && onError(event);
     onLoadEnd && onLoadEnd(event);
-    console.warn('Encountered an error loading page', event.nativeEvent);
+    console.warn("Encountered an error loading page", event.nativeEvent);
 
     this.setState({
       lastErrorEvent: event.nativeEvent,
-      viewState: WebViewState.ERROR,
+      viewState: WebViewState.ERROR
     });
   };
 
-  onLoadingFinish = (event) => {
+  onLoadingFinish = event => {
     const { onLoad, onLoadEnd } = this.props;
     onLoad && onLoad(event);
     onLoadEnd && onLoadEnd(event);
     this.setState({
-      viewState: WebViewState.IDLE,
+      viewState: WebViewState.IDLE
     });
     this.updateNavigationState(event);
   };
@@ -293,16 +279,15 @@ class AndroidWebView extends Component {
   onMessage = (event: Event) => {
     const { onMessage } = this.props;
     onMessage && onMessage(event);
-  }
+  };
 
   getWebViewHandle = () => ReactNative.findNodeHandle(this[RCT_WEBVIEW_REF]);
-
 
   goForward = () => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
       UIManager.RCTWebView.Commands.goForward,
-      null,
+      null
     );
   };
 
@@ -310,25 +295,25 @@ class AndroidWebView extends Component {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
       UIManager.RCTWebView.Commands.goBack,
-      null,
+      null
     );
   };
 
-  postMessage = (data) => {
+  postMessage = data => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
       UIManager.RCTWebView.Commands.postMessage,
-      [String(data)],
+      [String(data)]
     );
   };
 
   /**
-  * Injects a javascript string into the referenced WebView. Deliberately does not
-  * return a response because using eval() to return a response breaks this method
-  * on pages with a Content Security Policy that disallows eval(). If you need that
-  * functionality, look into postMessage/onMessage.
-  */
-  injectJavaScript = (data) => {
+   * Injects a javascript string into the referenced WebView. Deliberately does not
+   * return a response because using eval() to return a response breaks this method
+   * on pages with a Content Security Policy that disallows eval(). If you need that
+   * functionality, look into postMessage/onMessage.
+   */
+  injectJavaScript = data => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
       UIManager.RCTWebView.Commands.injectJavaScript,
@@ -340,7 +325,7 @@ class AndroidWebView extends Component {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
       UIManager.RCTWebView.Commands.reload,
-      null,
+      null
     );
   };
 
@@ -348,15 +333,15 @@ class AndroidWebView extends Component {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
       UIManager.RCTWebView.Commands.stopLoading,
-      null,
+      null
     );
   };
 
   /**
-  * We return an event with a bunch of fields including:
-  *  url, title, loading, canGoBack, canGoForward
-  */
-  updateNavigationState = (event) => {
+   * We return an event with a bunch of fields including:
+   *  url, title, loading, canGoBack, canGoForward
+   */
+  updateNavigationState = event => {
     if (this.props.onNavigationStateChange) {
       this.props.onNavigationStateChange(event.nativeEvent);
     }
@@ -369,17 +354,24 @@ class AndroidWebView extends Component {
       otherView = (this.props.renderLoading || defaultRenderLoading)();
     } else if (this.state.viewState === WebViewState.ERROR) {
       const errorEvent = this.state.lastErrorEvent;
-      otherView = this.props.renderError && this.props.renderError(
-              errorEvent.domain,
-              errorEvent.code,
-              errorEvent.description);
+      otherView =
+        this.props.renderError &&
+        this.props.renderError(
+          errorEvent.domain,
+          errorEvent.code,
+          errorEvent.description
+        );
     } else if (this.state.viewState !== WebViewState.IDLE) {
-      console.error(`RCTWebView invalid state encountered: ${this.state.loading}`);
+      console.error(
+        `RCTWebView invalid state encountered: ${this.state.loading}`
+      );
     }
 
     const webViewStyles = [styles.container, this.props.style];
-    if (this.state.viewState === WebViewState.LOADING ||
-      this.state.viewState === WebViewState.ERROR) {
+    if (
+      this.state.viewState === WebViewState.LOADING ||
+      this.state.viewState === WebViewState.ERROR
+    ) {
       // if we're in either LOADING or ERROR states, don't show the webView
       webViewStyles.push(styles.hidden);
     }
@@ -391,15 +383,19 @@ class AndroidWebView extends Component {
       source.uri = this.props.url;
     }
 
-    if (source.method === 'POST' && source.headers) {
-      console.warn('WebView: `source.headers` is not supported when using POST.');
-    } else if (source.method === 'GET' && source.body) {
-      console.warn('WebView: `source.body` is not supported when using GET.');
+    if (source.method === "POST" && source.headers) {
+      console.warn(
+        "WebView: `source.headers` is not supported when using POST."
+      );
+    } else if (source.method === "GET" && source.body) {
+      console.warn("WebView: `source.body` is not supported when using GET.");
     }
 
     const webView = (
       <WebViewForAndroid
-        ref={(c) => { this[RCT_WEBVIEW_REF] = c; }}
+        ref={c => {
+          this[RCT_WEBVIEW_REF] = c;
+        }}
         key="androidwebViewKey"
         style={webViewStyles}
         source={resolveAssetSource(source)}
@@ -408,17 +404,23 @@ class AndroidWebView extends Component {
         userAgent={this.props.userAgent}
         javaScriptEnabled={this.props.javaScriptEnabled}
         domStorageEnabled={this.props.domStorageEnabled}
-        messagingEnabled={typeof this.props.onMessage === 'function'}
+        messagingEnabled={typeof this.props.onMessage === "function"}
         onMessage={this.onMessage}
         contentInset={this.props.contentInset}
-        automaticallyAdjustContentInsets={this.props.automaticallyAdjustContentInsets}
+        automaticallyAdjustContentInsets={
+          this.props.automaticallyAdjustContentInsets
+        }
         onContentSizeChange={this.props.onContentSizeChange}
         onLoadingStart={this.onLoadingStart}
         onLoadingFinish={this.onLoadingFinish}
         onLoadingError={this.onLoadingError}
         testID={this.props.testID}
-        mediaPlaybackRequiresUserAction={this.props.mediaPlaybackRequiresUserAction}
-        allowUniversalAccessFromFileURLs={this.props.allowUniversalAccessFromFileURLs}
+        mediaPlaybackRequiresUserAction={
+          this.props.mediaPlaybackRequiresUserAction
+        }
+        allowUniversalAccessFromFileURLs={
+          this.props.allowUniversalAccessFromFileURLs
+        }
         mixedContentMode={this.props.mixedContentMode}
         saveFormDataDisabled={this.props.saveFormDataDisabled}
         uploadEnabledAndroid={true}
@@ -434,11 +436,14 @@ class AndroidWebView extends Component {
   }
 }
 
-const WebViewForAndroid = requireNativeComponent('AndroidWebView', AndroidWebView, {
-  nativeOnly: {
-    messagingEnabled: PropTypes.bool,
-  },
-});
-
+const WebViewForAndroid = requireNativeComponent(
+  "AndroidWebView",
+  AndroidWebView,
+  {
+    nativeOnly: {
+      messagingEnabled: PropTypes.bool
+    }
+  }
+);
 
 module.exports = AndroidWebView;
